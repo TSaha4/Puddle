@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// The path's roomId (for example "default") is the stable room key.
+// Only rooms persist. Membership, assigned visuals, and history never do.
+model PresenceRoom {
+  id        String   @id
+  name      String
+  createdAt DateTime @default(now())
+}

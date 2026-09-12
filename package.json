@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "workspaces": ["frontend", "services/orchestrator-service"],
+  "workspaces": ["frontend", "services/orchestrator-service", "services/presence-service"],
   "engines": { "node": ">=22", "npm": ">=10" },
   "scripts": {
     "dev": "concurrently --kill-others -n api,web \"npm run dev -w @puddle/orchestrator\" \"npm run dev -w @puddle/frontend\"",
