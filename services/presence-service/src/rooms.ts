@@ -61,7 +61,7 @@ export class PresenceRooms {
       return false;
     }
     if (room.size >= this.capacity) {
-      socket.close(4409, 'Room full (maximum 12 users)');
+      socket.close(4409, `Room full (maximum ${this.capacity} users)`);
       return false;
     }
     let slot = 0;

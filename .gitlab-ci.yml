@@ -1,0 +1,35 @@
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - if: '$CI_COMMIT_BRANCH'
+
+stages: [test]
+
+presence:test:
+  stage: test
+  image: node:22-bookworm
+  services:
+    - name: postgres:16-alpine
+      alias: postgres
+  variables:
+    POSTGRES_DB: puddle_presence_test
+    POSTGRES_USER: puddle
+    # Disposable CI-only database, never a deployed credential.
+    POSTGRES_PASSWORD: presence_test_only
+    DATABASE_URL: postgresql://puddle:presence_test_only@postgres:5432/puddle_presence_test
+  timeout: 10m
+  script:
+    - npm install
+    - npm run typecheck -w @puddle/presence
+    - npm run build -w @puddle/presence
+    - npm run migrate -w @puddle/presence
+    - npm test -w @puddle/presence
+    - npm run test:postgres -w @puddle/presence
+  rules:
+    - changes:
+        - services/presence-service/**/*
+        - package.json
+        - package-lock.json
+        - .gitlab-ci.yml

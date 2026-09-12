@@ -2,7 +2,7 @@ import express from 'express';
 import { createServer, type IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 import { WebSocketServer } from 'ws';
-import type { VerifyToken } from './auth.js';
+import type { Identity, VerifyToken } from './auth.js';
 import type { RoomStore } from './roomStore.js';
 import { isHeartbeat } from './protocol.js';
 import { PresenceRooms } from './rooms.js';
@@ -42,7 +42,7 @@ export function createPresenceServer(options: {
       if (tokens.length !== 1 || !tokens[0] || tokens[0].length > 4096) {
         return rejectUpgrade(socket, 401, 'Unauthorized');
       }
-      let identity;
+      let identity: Identity;
       try { identity = await options.verifyToken(tokens[0]); }
       catch { return rejectUpgrade(socket, 401, 'Unauthorized'); }
       if (socket.destroyed || stopping) return rejectUpgrade(socket, 503, 'Service Unavailable');
