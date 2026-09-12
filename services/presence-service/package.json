@@ -1,0 +1,30 @@
+{
+  "name": "@puddle/presence",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "generate": "prisma generate",
+    "migrate": "prisma migrate deploy",
+    "typecheck": "prisma generate && tsc -p tsconfig.test.json --noEmit",
+    "build": "prisma generate && tsc",
+    "start": "node dist/main.js",
+    "test": "tsx --test test/*.test.ts",
+    "test:postgres": "prisma generate && tsx --test postgres-tests/*.test.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "6.3.1",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jose": "^5.9.6",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.5",
+    "@types/ws": "^8.5.14",
+    "prisma": "6.3.1",
+    "tsx": "^4.19.2"
+  }
+}

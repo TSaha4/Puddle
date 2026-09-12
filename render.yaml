@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: puddle-phase-one
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev && npm run typecheck && npm test && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.14.0
+      - key: NODE_ENV
+        value: production
