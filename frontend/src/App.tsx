@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { isAmbientSession, type AmbientSession } from '../../shared/session';
 import { AmbientAudio, unlockAudio } from './audio';
+import { SessionMascot } from './visuals/SessionMascot';
 
 type Phase = 'idle' | 'loading' | 'playing' | 'finished';
 
@@ -133,7 +134,7 @@ export function App() {
         <div className="session-layout">
           <div className="mascot-stage">
             <span className="scribble top-scribble" aria-hidden="true">{active ? 'nothing to achieve here.' : 'hey. take a breather.'}</span>
-            <Mascot floating={active} />
+            <SessionMascot session={session} active={active} fallback={<Mascot floating={active} />} />
             <div className="ground-line" aria-hidden="true" />
             <span className="badge lavender mascot-label">100% unproductive. proudly.</span>
           </div>

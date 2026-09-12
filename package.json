@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "concurrently --kill-others -n api,web \"npm run dev -w @puddle/orchestrator\" \"npm run dev -w @puddle/frontend\"",
     "typecheck": "npm run typecheck --workspaces",
-    "test": "npm test -w @puddle/orchestrator",
+    "test": "npm test --workspaces --if-present",
     "build": "npm run build -w @puddle/frontend && npm run build -w @puddle/orchestrator",
     "start": "npm start -w @puddle/orchestrator"
   },
