@@ -1,0 +1,6 @@
+{
+  "name": "@puddle/mcp-ambient-audio", "version": "0.1.0", "private": true, "type": "module",
+  "scripts": { "dev": "tsx watch src/server.ts", "build": "tsc", "typecheck": "tsc --noEmit", "start": "node dist/server.js", "test": "tsx --test test/*.test.ts" },
+  "dependencies": { "@puddle/mcp-runtime": "*", "zod": "^3.25.76" },
+  "devDependencies": { "@types/node": "^22.10.5", "tsx": "^4.19.2" }
+}
