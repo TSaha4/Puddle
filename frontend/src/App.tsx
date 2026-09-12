@@ -28,6 +28,7 @@ export function App() {
   const audio = useRef<AmbientAudio | null>(null);
   const request = useRef<AbortController | null>(null);
   const busy = useRef(false);
+  const ratedSession = useRef<string | null>(null);
   const deadline = useRef(0);
   const heading = useRef<HTMLHeadingElement>(null);
 
@@ -49,12 +50,11 @@ export function App() {
   useEffect(() => {
     if (phase === 'playing' || phase === 'finished') heading.current?.focus();
     if (phase !== 'playing') return;
-    const tick = () => {
+    const timer = window.setInterval(() => {
       const seconds = Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000));
       setRemaining(seconds);
       if (seconds === 0) finish();
-    };
-    const timer = window.setInterval(tick, 250);
+    }, 250);
     return () => window.clearInterval(timer);
   }, [phase, finish]);
 
@@ -64,11 +64,18 @@ export function App() {
     setPhase('loading');
     setError('');
     setFeedback(null);
+    ratedSession.current = null;
     const controller = new AbortController();
     request.current = controller;
     const timeout = window.setTimeout(() => controller.abort(), 20_000);
     try {
-      await unlockAudio();
+      // Bound audio-context unlocking too: browsers may leave resume() pending.
+      await Promise.race([
+        unlockAudio(),
+        new Promise<never>((_resolve, reject) => {
+          controller.signal.addEventListener('abort', () => reject(new Error('Session request cancelled or timed out')), { once: true });
+        })
+      ]);
       if (controller.signal.aborted) throw new Error('cancelled');
       const response = await fetch('/api/sessions', { method: 'POST', signal: controller.signal });
       if (!response.ok) throw new Error(`API returned ${response.status}`);
@@ -97,4 +104,82 @@ export function App() {
   }
 
   function rate(value: 'up' | 'down') {
-   
+    if (!session || ratedSession.current === session.id) return;
+    ratedSession.current = session.id;
+    setFeedback(value);
+    // Phase 1 only. No inference, tracking, network request, or bandit update.
+    console.info('puddle.feedback', { sessionId: session.id, feedback: value });
+  }
+
+  const active = phase === 'playing';
+  const finished = phase === 'finished';
+  const loading = phase === 'loading';
+
+  return <div className="app-shell">
+    <header className="site-header">
+      <a className="wordmark" href="/" aria-label="puddle home"><span className="mini-blob" aria-hidden="true">··</span> puddle<span className="wordmark-dot">.</span></a>
+      <span className="badge header-badge">a little less everything</span>
+    </header>
+
+    <main>
+      <section className="intro" aria-labelledby="intro-title">
+        <div className="eyebrow"><span aria-hidden="true">✳</span> your next two minutes, reclaimed.</div>
+        <h1 id="intro-title">stop scrolling.<br /><span className="highlight">start puddling.</span></h1>
+        <p>no streaks. no self-improvement homework.<br />just a tiny pocket of nothing much.</p>
+      </section>
+
+      <section className={`session-card ${active ? 'is-playing' : ''}`} aria-label="your puddle session" aria-busy={loading}>
+        <div className="card-top"><span className="badge yellow">{active ? 'currently: off-duty' : finished ? 'tiny break, big yes.' : 'permission to do less'}</span><span className="edition">vol. 001 / sound</span></div>
+        <div className="session-layout">
+          <div className="mascot-stage">
+            <span className="scribble top-scribble" aria-hidden="true">{active ? 'nothing to achieve here.' : 'hey. take a breather.'}</span>
+            <Mascot floating={active} />
+            <div className="ground-line" aria-hidden="true" />
+            <span className="badge lavender mascot-label">100% unproductive. proudly.</span>
+          </div>
+
+          <div className="session-content">
+            {(!active && !finished) ? <>
+              <span className="eyebrow">one small escape</span>
+              <h2>your tabs can wait.</h2>
+              <p>a soft, slow wash of sound.<br />two minutes. zero things to get right.</p>
+              <div className="session-tags"><span>♫ ambient audio</span><span>◷ 2 minutes</span></div>
+              <button className="primary-button" onClick={() => void startSession()} disabled={loading}>
+                {loading ? 'making a little space…' : 'puddle now'} <span aria-hidden="true">↗</span>
+              </button>
+              <p className="fine-print" role="status">{loading ? 'waking up the sound. hang tight.' : 'sound on. shoulders optional. starts when you tap.'}</p>
+              {error && <div className="error-message" role="alert">{error}</div>}
+            </> : <>
+              <span className="eyebrow">{active ? 'you are officially on a break' : 'welcome back, human'}</span>
+              <h2 ref={heading} tabIndex={-1}>{active ? session?.payload.title : 'that was enough.'}</h2>
+              <p>{active ? 'let the sound do its thing. you don’t have to.' : 'no achievement unlocked. just a little room to be.'}</p>
+              {active && <>
+                <div className="timer-row"><span className="timer" role="timer" aria-label={`${remaining} seconds remaining`}>{formatTime(remaining)}</span><span>of absolutely nothing urgent</span></div>
+                <progress max={session?.payload.durationSeconds ?? 120} value={(session?.payload.durationSeconds ?? 120) - remaining} aria-label="session progress" />
+                <div className="audio-controls">
+                  <button className="small-button" aria-pressed={muted} onClick={() => setMuted(!muted)}>{muted ? 'unmute' : 'mute'}</button>
+                  <label htmlFor="volume">volume</label>
+                  <input id="volume" type="range" min="0" max="100" value={volume} aria-valuetext={`${volume} percent`} disabled={muted} onChange={(event) => setVolume(Number(event.target.value))} />
+                </div>
+                <button className="text-button" onClick={finish}>that’s enough for now ↗</button>
+              </>}
+              {finished && <button className="primary-button" onClick={() => void startSession()}>another little puddle <span aria-hidden="true">↗</span></button>}
+            </>}
+          </div>
+        </div>
+        {(active || finished) && <div className="feedback-row">
+          <div><strong>your kind of nothing?</strong><p className="fine-print">prototype: feedback stays in your browser console.</p></div>
+          <div className="feedback-buttons" role="group" aria-label="rate this session">
+            <button className={`feedback-button ${feedback === 'up' ? 'selected' : ''}`} aria-label="thumbs up, liked this session" aria-pressed={feedback === 'up'} disabled={feedback !== null} onClick={() => rate('up')}>👍</button>
+            <button className={`feedback-button ${feedback === 'down' ? 'selected' : ''}`} aria-label="thumbs down, not for me" aria-pressed={feedback === 'down'} disabled={feedback !== null} onClick={() => rate('down')}>👎</button>
+          </div>
+          <span className="feedback-status" role="status">{feedback ? 'noted. no wrong answers.' : ''}</span>
+        </div>}
+      </section>
+
+      <div className="bottom-notes"><p><span aria-hidden="true">↳</span> not a productivity tool. that’s the point.</p><span className="badge teal">less feed. more float.</span></div>
+    </main>
+
+    <footer><span>puddle — a small rebellion against more.</span><span>phase 01 · same little sound for everyone</span></footer>
+  </div>;
+}
