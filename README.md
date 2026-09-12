@@ -1,4 +1,4 @@
-# puddle
+# PUDDLE
 
 **stop scrolling. start puddling.** A tiny, playful replacement for another lap around your feed.
 
