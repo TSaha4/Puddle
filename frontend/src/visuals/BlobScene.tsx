@@ -30,6 +30,7 @@ function ContextGuard({ onFailure }: { onFailure: () => void }) {
 function Blob({ profile, reducedMotion, pokeRequest, onFailure }: {
   profile: BlobProfile; reducedMotion: boolean; pokeRequest: number; onFailure: () => void;
 }) {
+  const invalidate = useThree((state) => state.invalidate);
   const mesh = useRef<Mesh>(null);
   const face = useRef<Group>(null);
   const group = useRef<Group>(null);
@@ -70,19 +71,28 @@ function Blob({ profile, reducedMotion, pokeRequest, onFailure }: {
   }
 
   useEffect(() => {
+    if (reducedMotion) {
+      pointer.current = { ...NO_POKE };
+      impulse.current = 0;
+      hover.current = false;
+      dragging.current = false;
+    }
     deform(0, 0);
     if (group.current) {
       group.current.position.y = 0;
       group.current.rotation.z = -0.05;
     }
-  }, [profile, reducedMotion]);
+    // Demand mode needs one frame after imperative geometry/face updates.
+    invalidate();
+  }, [profile, reducedMotion, invalidate]);
 
   useEffect(() => {
     if (pokeRequest && !reducedMotion) {
       pointer.current = { ...NO_POKE };
       impulse.current = 0.3;
     }
-  }, [pokeRequest, reducedMotion]);
+    // Only an explicit new request pokes: toggling motion must not replay one.
+  }, [pokeRequest]);
 
   useEffect(() => {
     const release = () => { dragging.current = false; hover.current = false; };
